@@ -4,10 +4,21 @@
   "description": "Application TrailPro - Entraînement Running avec Firebase",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "firebase:login": "npx firebase login",
+    "firebase:init": "npx firebase init hosting",
+    "firebase:deploy": "npx firebase deploy --only hosting",
+    "deploy": "npx firebase deploy --only hosting"
   },
-  "keywords": ["running", "trail", "training", "firebase"],
+  "keywords": [
+    "running",
+    "trail",
+    "training",
+    "firebase"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^14.26.0"
+  }
 }
-
