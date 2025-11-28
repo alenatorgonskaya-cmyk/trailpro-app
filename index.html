@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrailPro - Entraînement Running</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange-primary: #FC4C02;
+            --orange-hover: #E64402;
+            --orange-light: #FFF4F0;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e5e5e5;
+            --gray-300: #d4d4d4;
+            --gray-400: #a3a3a3;
+            --gray-500: #737373;
+            --gray-600: #525252;
+            --gray-700: #404040;
+            --gray-800: #262626;
+            --gray-900: #171717;
+            --border: var(--gray-200);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        
+        .app-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--orange-primary);
+            letter-spacing: -0.5px;
+        }
+        
+        .header-subtitle {
+            color: var(--gray-600);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .header-nav {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .nav-btn {
+            padding: 8px 14px;
+            border: none;
+            background: transparent;
+            color: var(--gray-600);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        
+        .nav-btn:hover {
+            background: var(--gray-100);
+            color: var(--gray-900);
+        }
+        
+        .nav-btn.active {
+            background: var(--orange-light);
+            color: var(--orange-primary);
+        }
+        
+        .content {
+            padding: 24px;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .card-header {
+            margin-bottom: 16px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .card-description {
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+        
+        .goal-banner {
+            background: linear-gradient(135deg, var(--orange-primary) 0%, #D43F00 100%);
+            color: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .goal-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .goal-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            opacity: 0.95;
+            flex-wrap: wrap;
+        }
+        
+        .goal-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .workout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .workout-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            position: relative;
+            transition: all 0.2s;
+        }
+        
+        .workout-card:hover:not(.completed):not(.locked) {
+            border-color: var(--orange-primary);
+            box-shadow: 0 4px 12px rgba(252, 76, 2, 0.1);
+        }
+        
+        .workout-card.completed {
+            background: var(--gray-50);
+            opacity: 0.7;
+        }
+        
+        .workout-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .workout-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .workout-badge.endurance { background: #E0F2FE; color: #0369A1; }
+        .workout-badge.interval-short { background: #FEF3C7; color: #A16207; }
+        .workout-badge.interval-medium { background: #FEF3C7; color: #A16207; }
+        .workout-badge.tempo { background: #FFEDD5; color: #C2410C; }
+        .workout-badge.hills { background: #F3E8FF; color: #7E22CE; }
+        .workout-badge.long { background: #DCFCE7; color: #15803D; }
+        .workout-badge.recovery { background: #F0FDFA; color: #0F766E; }
+        .workout-badge.goal { background: var(--orange-light); color: var(--orange-primary); }
+        
+        .workout-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+        
+        .workout-desc {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        
+        .workout-stats {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .workout-stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: var(--gray-50);
+            border-radius: 8px;
+        }
+        
+        .workout-stat-label {
+            font-size: 11px;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .workout-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .workout-stat-unit {
+            font-size: 12px;
+            color: var(--gray-600);
+            font-weight: 500;
+            margin-left: 2px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--orange-primary);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: var(--orange-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(252, 76, 2, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--gray-700);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-50);
+        }
+        
+        .btn-ghost {
+            background: transparent;
+            color: var(--gray-700);
+        }
+        
+        .btn-ghost:hover {
+            background: var(--gray-100);
+        }
+        
+        .btn-success {
+            background: #10B981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn-full {
+            width: 100%;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.2s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .modal-subtitle {
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--orange-primary);
+            box-shadow: 0 0 0 3px rgba(252, 76, 2, 0.1);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .difficulty-selector {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .difficulty-btn {
+            flex: 1;
+            padding: 12px 8px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .difficulty-btn:hover {
+            border-color: var(--orange-primary);
+        }
+        
+        .difficulty-btn.selected {
+            border-color: var(--orange-primary);
+            background: var(--orange-light);
+        }
+        
+        .difficulty-emoji {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .difficulty-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .radio-option:hover {
+            border-color: var(--orange-primary);
+            background: var(--gray-50);
+        }
+        
+        .radio-option.selected {
+            border-color: var(--orange-primary);
+            background: var(--orange-light);
+        }
+        
+        .radio-option input[type="radio"] {
+            margin-right: 12px;
+            margin-top: 2px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--orange-primary);
+        }
+        
+        .radio-option-content {
+            flex: 1;
+        }
+        
+        .radio-option-title {
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .radio-option-desc {
+            font-size: 13px;
+            color: var(--gray-600);
+            line-height: 1.4;
+        }
+        
+        .progress-section {
+            margin-bottom: 24px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .progress-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+        
+        .progress-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--orange-primary);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--orange-primary);
+            transition: width 0.5s ease;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-title {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-bottom: 8px;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .stat-unit {
+            font-size: 14px;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-top: 16px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--gray-100);
+            color: var(--gray-500);
+        }
+        
+        .calendar-day.has-workout {
+            background: var(--orange-primary);
+            color: white;
+        }
+        
+        .calendar-day.today {
+            border: 2px solid var(--orange-primary);
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .alert-info {
+            background: #EFF6FF;
+            color: #1E40AF;
+            border: 1px solid #BFDBFE;
+        }
+        
+        .alert-success {
+            background: #F0FDF4;
+            color: #15803D;
+            border: 1px solid #BBF7D0;
+        }
+        
+        .alert-warning {
+            background: #FFFBEB;
+            color: #B45309;
+            border: 1px solid #FDE68A;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-600);
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+        
+        .empty-description {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-bottom: 24px;
+        }
+        
+        .week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .week-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        .week-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .week-badge.current {
+            background: var(--orange-light);
+            color: var(--orange-primary);
+        }
+        
+        .week-badge.future {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+        
+        .history-item {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .history-date {
+            font-size: 12px;
+            color: var(--gray-600);
+            margin-bottom: 8px;
+        }
+        
+        .history-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .history-note {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+        
+        .history-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .history-stat {
+            text-align: center;
+            padding: 10px;
+            background: var(--gray-50);
+            border-radius: 8px;
+        }
+        
+        .history-stat-label {
+            font-size: 11px;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .history-stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-top: 4px;
+        }
+        
+        .difficulty-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+        
+        .difficulty-1 { background: #FEE2E2; color: #991B1B; }
+        .difficulty-2 { background: #FED7AA; color: #9A3412; }
+        .difficulty-3 { background: #DBEAFE; color: #1E40AF; }
+        .difficulty-4 { background: #D1FAE5; color: #065F46; }
+        .difficulty-5 { background: #F3E8FF; color: #6B21A8; }
+        
+        .week-summary {
+            display: flex;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-bottom: 16px;
+        }
+        
+        .completed-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 14px;
+        }
+        
+        .completed-check.done {
+            background: #10B981;
+            color: white;
+        }
+        
+        .completed-check.pending {
+            background: var(--gray-200);
+            color: var(--gray-500);
+        }
+        
+        .locked-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px;
+            }
+            
+            .content {
+                padding: 16px;
+            }
+            
+            .workout-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-nav {
+                flex-wrap: wrap;
+            }
+            
+            .nav-btn {
+                font-size: 13px;
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function TrailTrainingApp() {
+            const [activeView, setActiveView] = useState('home');
+            const [goal, setGoal] = useState(null);
+            const [weeklyPlan, setWeeklyPlan] = useState([]);
+            const [history, setHistory] = useState([]);
+            const [showModal, setShowModal] = useState(false);
+            const [currentWorkout, setCurrentWorkout] = useState(null);
+            
+            const [profile, setProfile] = useState({
+                level: 'intermediate', // beginner, intermediate, advanced, expert
+                best5k: '',
+                best10k: '',
+                vma: '',
+                challengeMode: false,
+                volume: 'medium', // light, medium, high
+                indoorTraining: false, // Si l'utilisateur court en salle
+                maxHeartRate: 190 // FC max pour calculs TRIMP
+            });
+
+            const [showMessage, setShowMessage] = useState(null);
+
+            const [goalForm, setGoalForm] = useState({
+                name: '',
+                date: '',
+                distance: '',
+                elevation: '',
+                notes: '',
+                trainingType: 'mixed',
+                sessionsPerWeek: 3,
+                maxDuration: 60
+            });
+            
+            const [workoutForm, setWorkoutForm] = useState({
+                distance: '',
+                time: '',
+                elevation: '',
+                heartRate: '',
+                difficulty: 3,
+                notes: ''
+            });
+
+            useEffect(() => {
+                const savedGoal = localStorage.getItem('trainingGoal');
+                const savedPlan = localStorage.getItem('weeklyPlan');
+                const savedHistory = localStorage.getItem('trainingHistory');
+                const savedProfile = localStorage.getItem('userProfile');
+                
+                if (savedGoal) {
+                    const parsedGoal = JSON.parse(savedGoal);
+                    setGoal(parsedGoal);
+                    setGoalForm(parsedGoal);
+                }
+                if (savedPlan) setWeeklyPlan(JSON.parse(savedPlan));
+                if (savedHistory) setHistory(JSON.parse(savedHistory));
+                if (savedProfile) setProfile(JSON.parse(savedProfile));
+            }, []);
+
+            useEffect(() => {
+                if (goal) {
+                    localStorage.setItem('trainingGoal', JSON.stringify(goal));
+                    generateWeeklyPlan();
+                }
+            }, [goal]);
+
+            useEffect(() => {
+                localStorage.setItem('weeklyPlan', JSON.stringify(weeklyPlan));
+            }, [weeklyPlan]);
+
+            useEffect(() => {
+                localStorage.setItem('trainingHistory', JSON.stringify(history));
+            }, [history]);
+
+            useEffect(() => {
+                localStorage.setItem('userProfile', JSON.stringify(profile));
+            }, [profile]);
+
+            const calculateCurrentLevel = () => {
+                // Calcul VMA basé sur le profil
+                let estimatedVMA = 12; // défaut
+                
+                if (profile.vma && parseFloat(profile.vma) > 0) {
+                    estimatedVMA = parseFloat(profile.vma);
+                } else if (profile.best5k && parseFloat(profile.best5k) > 0) {
+                    // Estimer VMA depuis temps au 5K (formule approximative)
+                    const time5kMinutes = parseFloat(profile.best5k);
+                    const speed5k = 5 / (time5kMinutes / 60); // km/h
+                    estimatedVMA = speed5k * 1.08; // VMA ~ 108% de vitesse 5K
+                } else if (profile.best10k && parseFloat(profile.best10k) > 0) {
+                    // Estimer VMA depuis temps au 10K
+                    const time10kMinutes = parseFloat(profile.best10k);
+                    const speed10k = 10 / (time10kMinutes / 60); // km/h
+                    estimatedVMA = speed10k * 1.10; // VMA ~ 110% de vitesse 10K
+                } else {
+                    // Basé sur niveau déclaré
+                    const vmaByLevel = {
+                        beginner: 11,
+                        intermediate: 13,
+                        advanced: 15,
+                        expert: 17
+                    };
+                    estimatedVMA = vmaByLevel[profile.level] || 12;
+                }
+
+                // Ajuster selon l'historique
+                if (history.length > 0) {
+                    const recent = history.slice(0, 5);
+                    const totalSpeed = recent.reduce((acc, w) => acc + (w.distance / (w.time / 60)), 0);
+                    const avgSpeed = totalSpeed / recent.length;
+
+                    const avgDifficulty = recent.reduce((acc, w) => acc + (w.difficulty || 3), 0) / recent.length;
+                    const difficultyFactor = avgDifficulty <= 2 ? 0.95 : (avgDifficulty >= 4 ? 1.05 : 1.0);
+
+                    // Moyenne entre VMA estimée et performances réelles
+                    const performanceVMA = avgSpeed * 1.1;
+                    estimatedVMA = (estimatedVMA + performanceVMA) / 2 * difficultyFactor;
+                }
+
+                // Mode challenge : augmenter légèrement les attentes
+                if (profile.challengeMode) {
+                    estimatedVMA *= 1.05;
+                }
+
+                return {
+                    avgSpeed: estimatedVMA * 0.75, // vitesse endurance ~ 75% VMA
+                    vma: estimatedVMA,
+                    avgElevationRate: 100
+                };
+            };
+
+            // Calcul TRIMP (Training Impulse) - charge d'entraînement
+            const calculateTRIMP = (duration, intensityPercent) => {
+                // intensityPercent: pourcentage de FC max (ex: 75 pour 75%)
+                // Formule simplifiée: durée × facteur de zone
+                let zoneFactor = 1;
+                if (intensityPercent < 60) zoneFactor = 1;
+                else if (intensityPercent < 70) zoneFactor = 2;
+                else if (intensityPercent < 80) zoneFactor = 3;
+                else if (intensityPercent < 90) zoneFactor = 4;
+                else zoneFactor = 5;
+
+                return duration * zoneFactor;
+            };
+
+            // Calcul inclinaison tapis pour simuler dénivelé
+            const calculateTreadmillIncline = (elevation, distance) => {
+                if (distance === 0) return { min: 0, max: 0, avg: 0 };
+                
+                // Pente moyenne en %
+                const avgGrade = (elevation / (distance * 1000)) * 100;
+                
+                // Pour course en salle, on peut varier l'inclinaison
+                // Suggestion de plage: ±20% de la moyenne
+                const minIncline = Math.max(0, avgGrade * 0.8);
+                const maxIncline = avgGrade * 1.2;
+                
+                return {
+                    min: minIncline.toFixed(1),
+                    max: maxIncline.toFixed(1),
+                    avg: avgGrade.toFixed(1)
+                };
+            };
+
+            const generateWeeklyPlan = () => {
+                if (!goal) return;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const goalDate = new Date(goal.date);
+                const weeksUntilGoal = Math.max(1, Math.ceil((goalDate - today) / (7 * 24 * 60 * 60 * 1000)));
+
+                const currentLevel = calculateCurrentLevel();
+                const targetDistance = parseFloat(goal.distance);
+                const targetElevation = parseFloat(goal.elevation);
+                const sessionsPerWeek = parseInt(goal.sessionsPerWeek) || 3;
+                const maxDuration = parseInt(goal.maxDuration) || 60;
+                const trainingType = goal.trainingType || 'mixed';
+
+                // Facteur de volume d'entraînement
+                const volumeFactors = {
+                    light: 0.85,
+                    medium: 1.0,
+                    high: 1.15
+                };
+                const volumeFactor = volumeFactors[profile.volume] || 1.0;
+
+                // TRIMP cible par semaine (basé sur niveau et volume)
+                const baseWeeklyTRIMP = {
+                    beginner: 200,
+                    intermediate: 300,
+                    advanced: 400,
+                    expert: 500
+                };
+                const targetWeeklyTRIMP = baseWeeklyTRIMP[profile.level] * volumeFactor;
+
+                const weeks = [];
+
+                for (let weekNum = 1; weekNum <= weeksUntilGoal; weekNum++) {
+                    const weekProgress = weekNum / weeksUntilGoal;
+                    const isLastWeek = weekNum === weeksUntilGoal;
+
+                    const weekDistanceTarget = targetDistance * (0.4 + 0.6 * weekProgress) * volumeFactor;
+                    const weekElevationTarget = targetElevation * (0.3 + 0.7 * weekProgress);
+
+                    const workouts = [];
+                    const weekStartDate = new Date(today);
+                    weekStartDate.setDate(today.getDate() + (weekNum - 1) * 7);
+
+                    if (isLastWeek) {
+                        if (sessionsPerWeek >= 2) {
+                            workouts.push({
+                                id: `w${weekNum}-1`,
+                                name: "Sortie légère",
+                                type: "recovery",
+                                distance: targetDistance * 0.25,
+                                elevation: targetElevation * 0.15,
+                                estimatedTime: Math.round((targetDistance * 0.25 / currentLevel.avgSpeed) * 60),
+                                description: "Récupération active, 65-70% FC max",
+                                fcPercent: 67,
+                                includeFlat: true
+                            });
+                        }
+                        
+                        workouts.push({
+                            id: `w${weekNum}-goal`,
+                            name: goal.name || "Objectif",
+                            type: "goal",
+                            distance: targetDistance,
+                            elevation: targetElevation,
+                            estimatedTime: Math.round((targetDistance / currentLevel.avgSpeed) * 60 * 1.1),
+                            description: "🎯 JOUR J - " + (goal.notes || "Bonne chance !"),
+                            isGoal: true,
+                            fcPercent: 85
+                        });
+                    } else {
+                        let sessionTypes = [];
+                        
+                        if (trainingType === 'route') {
+                            sessionTypes = sessionsPerWeek === 3 
+                                ? ['endurance', 'interval-short', 'long']
+                                : sessionsPerWeek === 4
+                                ? ['endurance', 'interval-short', 'tempo', 'long']
+                                : ['interval-short', 'long'];
+                        } else if (trainingType === 'mountain') {
+                            sessionTypes = sessionsPerWeek === 3
+                                ? ['endurance', 'hills', 'long']
+                                : sessionsPerWeek === 4
+                                ? ['endurance', 'hills', 'interval-medium', 'long']
+                                : ['hills', 'long'];
+                        } else {
+                            const useInterval = weekNum % 2 === 1;
+                            sessionTypes = sessionsPerWeek === 3
+                                ? ['endurance', useInterval ? 'interval-medium' : 'hills', 'long']
+                                : sessionsPerWeek === 4
+                                ? ['endurance', 'interval-medium', 'hills', 'long']
+                                : [useInterval ? 'interval-medium' : 'hills', 'long'];
+                        }
+
+                        sessionTypes.forEach((type, index) => {
+                            let workout = null;
+                            
+                            // Ajout de séances sur plat (1 séance sur 3 sans dénivelé)
+                            const includeFlat = (index === 0 && weekNum % 3 === 0) || type === 'interval-short';
+                            
+                            switch(type) {
+                                case 'endurance':
+                                    const enduranceDist = Math.max(
+                                        Math.min(weekDistanceTarget * 0.25, maxDuration / 60 * currentLevel.avgSpeed),
+                                        (20 / 60) * currentLevel.avgSpeed
+                                    );
+                                    workout = {
+                                        name: "Endurance",
+                                        type: "endurance",
+                                        distance: Math.round(enduranceDist * 10) / 10,
+                                        elevation: includeFlat ? 0 : Math.round(weekElevationTarget * 0.2),
+                                        estimatedTime: Math.max(20, Math.round((enduranceDist / currentLevel.avgSpeed) * 60)),
+                                        description: "Allure confortable, 70-75% FC max",
+                                        fcPercent: 72,
+                                        includeFlat: includeFlat
+                                    };
+                                    break;
+                                
+                                case 'interval-short':
+                                    const intervalShortDist = Math.max(
+                                        Math.min(weekDistanceTarget * 0.2, maxDuration / 60 * currentLevel.avgSpeed * 0.9),
+                                        (20 / 60) * currentLevel.avgSpeed * 0.9
+                                    );
+                                    const vmaSpeed = currentLevel.vma || 12;
+                                    const intervals = profile.challengeMode ? '10-12 x 30/30' : '8-10 x 30/30';
+                                    workout = {
+                                        name: "Fractionné court",
+                                        type: "interval-short",
+                                        distance: Math.round(intervalShortDist * 10) / 10,
+                                        elevation: 0, // Fractionnés courts toujours sur plat
+                                        estimatedTime: Math.max(20, Math.round((intervalShortDist / currentLevel.avgSpeed) * 60 * 0.9)),
+                                        description: `VMA: ${intervals} à ${vmaSpeed.toFixed(1)} km/h, 90-95% FC max`,
+                                        fcPercent: 92,
+                                        includeFlat: true
+                                    };
+                                    break;
+                                
+                                case 'interval-medium':
+                                    const intervalMedDist = Math.max(
+                                        Math.min(weekDistanceTarget * 0.25, maxDuration / 60 * currentLevel.avgSpeed * 0.95),
+                                        (20 / 60) * currentLevel.avgSpeed * 0.95
+                                    );
+                                    const reps = profile.challengeMode ? '5-7 x 3min/2min' : '4-6 x 3min/2min';
+                                    workout = {
+                                        name: "Fractionné moyen",
+                                        type: "interval-medium",
+                                        distance: Math.round(intervalMedDist * 10) / 10,
+                                        elevation: includeFlat ? 0 : Math.round(weekElevationTarget * 0.15),
+                                        estimatedTime: Math.max(20, Math.round((intervalMedDist / currentLevel.avgSpeed) * 60 * 0.95)),
+                                        description: `Tempo: ${reps}, 85-90% FC max`,
+                                        fcPercent: 87,
+                                        includeFlat: includeFlat
+                                    };
+                                    break;
+                                
+                                case 'tempo':
+                                    const tempoDist = Math.max(
+                                        Math.min(weekDistanceTarget * 0.3, maxDuration / 60 * currentLevel.avgSpeed * 1.05),
+                                        (20 / 60) * currentLevel.avgSpeed * 1.05
+                                    );
+                                    workout = {
+                                        name: "Tempo run",
+                                        type: "tempo",
+                                        distance: Math.round(tempoDist * 10) / 10,
+                                        elevation: Math.round(weekElevationTarget * 0.2),
+                                        estimatedTime: Math.max(20, Math.round((tempoDist / currentLevel.avgSpeed) * 60 * 0.95)),
+                                        description: "Allure soutenue continue, 82-87% FC max",
+                                        fcPercent: 84
+                                    };
+                                    break;
+                                
+                                case 'hills':
+                                    const hillsDist = Math.max(
+                                        Math.min(weekDistanceTarget * 0.22, maxDuration / 60 * currentLevel.avgSpeed * 0.85),
+                                        (20 / 60) * currentLevel.avgSpeed * 0.85
+                                    );
+                                    const hillReps = profile.challengeMode ? '8-12 x côtes' : '6-10 x côtes';
+                                    workout = {
+                                        name: "Côtes",
+                                        type: "hills",
+                                        distance: Math.round(hillsDist * 10) / 10,
+                                        elevation: Math.round(weekElevationTarget * 0.4),
+                                        estimatedTime: Math.max(20, Math.round((hillsDist / currentLevel.avgSpeed) * 60 * 1.2)),
+                                        description: `${hillReps}, 80-88% FC max`,
+                                        fcPercent: 84
+                                    };
+                                    break;
+                                
+                                case 'long':
+                                    const longDist = Math.max(
+                                        Math.min(
+                                            Math.min(weekDistanceTarget * 0.5, targetDistance * 0.8),
+                                            maxDuration / 60 * currentLevel.avgSpeed * 1.1
+                                        ),
+                                        (25 / 60) * currentLevel.avgSpeed * 1.1 // min 25 min pour sortie longue
+                                    );
+                                    workout = {
+                                        name: "Sortie longue",
+                                        type: "long",
+                                        distance: Math.round(longDist * 10) / 10,
+                                        elevation: Math.round(weekElevationTarget * 0.45),
+                                        estimatedTime: Math.max(25, Math.round((longDist / currentLevel.avgSpeed) * 60 * 1.05)),
+                                        description: "Endurance fondamentale, 65-72% FC max",
+                                        fcPercent: 68
+                                    };
+                                    break;
+                            }
+                            
+                            if (workout) {
+                                workout.id = `w${weekNum}-${index + 1}`;
+                                // Calcul TRIMP pour cette séance
+                                workout.trimp = calculateTRIMP(workout.estimatedTime, workout.fcPercent || 75);
+                                workouts.push(workout);
+                            }
+                        });
+                    }
+
+                    const weekTRIMP = workouts.reduce((acc, w) => acc + (w.trimp || 0), 0);
+
+                    weeks.push({
+                        weekNumber: weekNum,
+                        startDate: weekStartDate.toISOString().split('T')[0],
+                        workouts: workouts,
+                        totalDistance: workouts.reduce((acc, w) => acc + w.distance, 0),
+                        totalElevation: workouts.reduce((acc, w) => acc + w.elevation, 0),
+                        weekTRIMP: weekTRIMP,
+                        isCurrent: weekNum === 1
+                    });
+                }
+
+                setWeeklyPlan(weeks);
+            };
+
+            const getCurrentWeek = () => {
+                return weeklyPlan.find(w => w.isCurrent);
+            };
+
+            const getWorkoutStatus = (workout) => {
+                return history.find(h => h.plannedWorkoutId === workout.id);
+            };
+
+            const handleGoalSubmit = (e) => {
+                e.preventDefault();
+                setGoal(goalForm);
+                setActiveView('home');
+            };
+
+            const startWorkout = (workout, isLocked) => {
+                if (isLocked) return;
+                setCurrentWorkout(workout);
+                setShowModal(true);
+            };
+
+            const handleWorkoutSubmit = (e) => {
+                e.preventDefault();
+                
+                const newWorkout = {
+                    id: Date.now(),
+                    plannedWorkoutId: currentWorkout.id,
+                    name: currentWorkout.name,
+                    type: currentWorkout.type,
+                    distance: parseFloat(workoutForm.distance),
+                    time: parseFloat(workoutForm.time),
+                    elevation: parseFloat(workoutForm.elevation),
+                    heartRate: parseFloat(workoutForm.heartRate),
+                    difficulty: parseInt(workoutForm.difficulty),
+                    notes: workoutForm.notes,
+                    date: new Date().toISOString().split('T')[0],
+                    speed: (parseFloat(workoutForm.distance) / (parseFloat(workoutForm.time) / 60)).toFixed(2),
+                    pace: (parseFloat(workoutForm.time) / parseFloat(workoutForm.distance)).toFixed(1)
+                };
+
+                setHistory([newWorkout, ...history]);
+
+                if (goal) {
+                    setTimeout(() => {
+                        generateWeeklyPlan();
+                        setShowMessage({
+                            type: 'success',
+                            text: '✅ Séance validée ! Le planning a été ajusté selon vos performances.'
+                        });
+                        setTimeout(() => setShowMessage(null), 4000);
+                    }, 100);
+                }
+
+                setWorkoutForm({
+                    distance: '',
+                    time: '',
+                    elevation: '',
+                    heartRate: '',
+                    difficulty: 3,
+                    notes: ''
+                });
+                setCurrentWorkout(null);
+                setShowModal(false);
+            };
+
+            const calculateProgress = () => {
+                if (!goal || history.length === 0) return null;
+
+                const targetDistance = parseFloat(goal.distance);
+                const targetElevation = parseFloat(goal.elevation);
+
+                const bestDistance = Math.max(...history.map(w => w.distance));
+                const bestElevation = Math.max(...history.map(w => w.elevation));
+
+                const distanceProgress = Math.min(100, (bestDistance / targetDistance) * 100);
+                const elevationProgress = Math.min(100, (bestElevation / targetElevation) * 100);
+
+                const fourWeeksAgo = new Date();
+                fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+                const recentWorkouts = history.filter(w => new Date(w.date) >= fourWeeksAgo);
+                const targetSessions = parseInt(goal.sessionsPerWeek) * 4;
+                const consistency = Math.min(100, (recentWorkouts.length / targetSessions) * 100);
+
+                return {
+                    distanceProgress,
+                    elevationProgress,
+                    consistency,
+                    bestDistance,
+                    bestElevation,
+                    recentWorkouts: recentWorkouts.length
+                };
+            };
+
+            const generateCalendar = () => {
+                const days = [];
+                const today = new Date();
+                
+                for (let i = 27; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    const hasWorkout = history.some(w => w.date === dateStr);
+                    const isToday = i === 0;
+                    
+                    days.push({
+                        date: dateStr,
+                        day: date.getDate(),
+                        hasWorkout,
+                        isToday
+                    });
+                }
+                
+                return days;
+            };
+
+            const currentWeek = getCurrentWeek();
+            const progress = calculateProgress();
+            const calendar = generateCalendar();
+
+            const daysUntilGoal = goal ? Math.ceil((new Date(goal.date) - new Date()) / (24 * 60 * 60 * 1000)) : 0;
+
+            return (
+                <div className="app-container">
+                    <div className="header">
+                        <div className="header-left">
+                            <div className="logo">TrailPro</div>
+                            {goal && (
+                                <div className="header-subtitle">
+                                    {daysUntilGoal} jours avant {goal.name}
+                                </div>
+                            )}
+                        </div>
+                        <div className="header-nav">
+                            <button 
+                                className={`nav-btn ${activeView === 'home' ? 'active' : ''}`}
+                                onClick={() => setActiveView('home')}
+                            >
+                                Accueil
+                            </button>
+                            <button 
+                                className={`nav-btn ${activeView === 'planning' ? 'active' : ''}`}
+                                onClick={() => setActiveView('planning')}
+                            >
+                                Planning
+                            </button>
+                            <button 
+                                className={`nav-btn ${activeView === 'progression' ? 'active' : ''}`}
+                                onClick={() => setActiveView('progression')}
+                            >
+                                Progression
+                            </button>
+                            <button 
+                                className={`nav-btn ${activeView === 'historique' ? 'active' : ''}`}
+                                onClick={() => setActiveView('historique')}
+                            >
+                                Historique
+                            </button>
+                            <button 
+                                className={`nav-btn ${activeView === 'profile' ? 'active' : ''}`}
+                                onClick={() => setActiveView('profile')}
+                            >
+                                Profil
+                            </button>
+                            <button 
+                                className={`nav-btn ${activeView === 'settings' ? 'active' : ''}`}
+                                onClick={() => setActiveView('settings')}
+                            >
+                                Objectif
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="content">
+                        {activeView === 'home' && (
+                            <div>
+                                {!goal ? (
+                                    <div className="empty-state">
+                                        <div className="empty-icon">🎯</div>
+                                        <div className="empty-title">Bienvenue sur TrailPro</div>
+                                        <div className="empty-description">
+                                            Définissez votre objectif pour recevoir un programme d'entraînement personnalisé
+                                        </div>
+                                        <button className="btn btn-primary" onClick={() => setActiveView('settings')}>
+                                            Créer mon objectif
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="goal-banner">
+                                            <div className="goal-name">{goal.name}</div>
+                                            <div className="goal-meta">
+                                                <div className="goal-stat">
+                                                    <span>📅</span>
+                                                    <span>{new Date(goal.date).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'})}</span>
+                                                </div>
+                                                <div className="goal-stat">
+                                                    <span>🏃</span>
+                                                    <span>{goal.distance} km</span>
+                                                </div>
+                                                <div className="goal-stat">
+                                                    <span>⛰️</span>
+                                                    <span>{goal.elevation} m D+</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {currentWeek && (
+                                            <div className="card">
+                                                <div className="card-header">
+                                                    <div className="card-title">Semaine en cours</div>
+                                                    <div className="card-description">
+                                                        Complétez vos séances quand vous le souhaitez
+                                                    </div>
+                                                </div>
+
+                                                <div className="workout-grid">
+                                                    {currentWeek.workouts.map(workout => {
+                                                        const completed = getWorkoutStatus(workout);
+                                                        return (
+                                                            <div 
+                                                                key={workout.id} 
+                                                                className={`workout-card ${completed ? 'completed' : ''}`}
+                                                                onClick={() => !completed && startWorkout(workout, false)}
+                                                                style={{cursor: completed ? 'default' : 'pointer'}}
+                                                            >
+                                                                <span className={`workout-badge ${workout.type}`}>
+                                                                    {workout.type === 'endurance' && '🏃 Endurance'}
+                                                                    {workout.type === 'interval-short' && '⚡ VMA'}
+                                                                    {workout.type === 'interval-medium' && '⚡ Tempo'}
+                                                                    {workout.type === 'tempo' && '🔥 Tempo'}
+                                                                    {workout.type === 'hills' && '⛰️ Côtes'}
+                                                                    {workout.type === 'long' && '🏃‍♂️ Longue'}
+                                                                    {workout.type === 'recovery' && '💆 Récup'}
+                                                                    {workout.type === 'goal' && '🎯 Objectif'}
+                                                                </span>
+                                                                
+                                                                <div className={`completed-check ${completed ? 'done' : 'pending'}`}>
+                                                                    {completed ? '✓' : '○'}
+                                                                </div>
+
+                                                                <div className="workout-name">{workout.name}</div>
+                                                                <div className="workout-desc">{workout.description}</div>
+
+                                                                <div className="workout-stats">
+                                                                    <div className="workout-stat-item">
+                                                                        <div className="workout-stat-label">Distance</div>
+                                                                        <div className="workout-stat-value">
+                                                                            {workout.distance}
+                                                                            <span className="workout-stat-unit">km</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="workout-stat-item">
+                                                                        <div className="workout-stat-label">D+</div>
+                                                                        <div className="workout-stat-value">
+                                                                            {workout.elevation}
+                                                                            <span className="workout-stat-unit">m</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="workout-stat-item">
+                                                                        <div className="workout-stat-label">Durée</div>
+                                                                        <div className="workout-stat-value">
+                                                                            {workout.estimatedTime}
+                                                                            <span className="workout-stat-unit">min</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {!completed && (
+                                                                    <button className="btn btn-primary btn-full">
+                                                                        Valider cette séance
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {activeView === 'profile' && (
+                            <div>
+                                {showMessage && (
+                                    <div className={`alert alert-${showMessage.type}`}>
+                                        {showMessage.text}
+                                    </div>
+                                )}
+
+                                <div className="card">
+                                    <div className="card-header">
+                                        <div className="card-title">Votre profil</div>
+                                        <div className="card-description">
+                                            Renseignez vos infos pour un programme mieux calibré
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Volume d'entraînement</label>
+                                        <div className="radio-group">
+                                            <label className={`radio-option ${profile.volume === 'light' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="volume"
+                                                    value="light"
+                                                    checked={profile.volume === 'light'}
+                                                    onChange={(e) => setProfile({...profile, volume: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">🌙 Léger</div>
+                                                    <div className="radio-option-desc">Volume réduit de 15% - Idéal si vous débutez ou pratiquez d'autres sports</div>
+                                                </div>
+                                            </label>
+
+                                            <label className={`radio-option ${profile.volume === 'medium' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="volume"
+                                                    value="medium"
+                                                    checked={profile.volume === 'medium'}
+                                                    onChange={(e) => setProfile({...profile, volume: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">⚖️ Moyen</div>
+                                                    <div className="radio-option-desc">Volume standard - Équilibre optimal</div>
+                                                </div>
+                                            </label>
+
+                                            <label className={`radio-option ${profile.volume === 'high' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="volume"
+                                                    value="high"
+                                                    checked={profile.volume === 'high'}
+                                                    onChange={(e) => setProfile({...profile, volume: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">💪 Élevé</div>
+                                                    <div className="radio-option-desc">Volume augmenté de 15% - Pour coureurs expérimentés</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                                            <input
+                                                type="checkbox"
+                                                checked={profile.indoorTraining}
+                                                onChange={(e) => setProfile({...profile, indoorTraining: e.target.checked})}
+                                                style={{width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--orange-primary)'}}
+                                            />
+                                            <div>
+                                                <div className="form-label" style={{marginBottom: '4px'}}>
+                                                    🏃‍♀️ Je cours en salle (tapis de course)
+                                                </div>
+                                                <div style={{fontSize: '13px', color: 'var(--gray-600)'}}>
+                                                    Affiche les recommandations d'inclinaison pour simuler le dénivelé
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Niveau de course</label>
+                                        <div className="radio-group">
+                                            <label className={`radio-option ${profile.level === 'beginner' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="level"
+                                                    value="beginner"
+                                                    checked={profile.level === 'beginner'}
+                                                    onChange={(e) => setProfile({...profile, level: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">🌱 Débutant</div>
+                                                    <div className="radio-option-desc">Je débute la course à pied, VMA ~11 km/h</div>
+                                                </div>
+                                            </label>
+
+                                            <label className={`radio-option ${profile.level === 'intermediate' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="level"
+                                                    value="intermediate"
+                                                    checked={profile.level === 'intermediate'}
+                                                    onChange={(e) => setProfile({...profile, level: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">🏃 Intermédiaire</div>
+                                                    <div className="radio-option-desc">Je cours régulièrement depuis quelques mois, VMA ~13 km/h</div>
+                                                </div>
+                                            </label>
+
+                                            <label className={`radio-option ${profile.level === 'advanced' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="level"
+                                                    value="advanced"
+                                                    checked={profile.level === 'advanced'}
+                                                    onChange={(e) => setProfile({...profile, level: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">💪 Avancé</div>
+                                                    <div className="radio-option-desc">Je cours depuis plusieurs années, VMA ~15 km/h</div>
+                                                </div>
+                                            </label>
+
+                                            <label className={`radio-option ${profile.level === 'expert' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="level"
+                                                    value="expert"
+                                                    checked={profile.level === 'expert'}
+                                                    onChange={(e) => setProfile({...profile, level: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">🔥 Expert</div>
+                                                    <div className="radio-option-desc">Coureur confirmé, compétitions régulières, VMA ~17 km/h</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Statistiques personnelles (optionnel)</label>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label className="form-label" style={{fontSize: '12px', color: 'var(--gray-600)'}}>
+                                                    Meilleur 5K (minutes)
+                                                </label>
+                                                <input
+                                                    className="form-input"
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={profile.best5k}
+                                                    onChange={(e) => setProfile({...profile, best5k: e.target.value})}
+                                                    placeholder="25.5"
+                                                />
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label className="form-label" style={{fontSize: '12px', color: 'var(--gray-600)'}}>
+                                                    Meilleur 10K (minutes)
+                                                </label>
+                                                <input
+                                                    className="form-input"
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={profile.best10k}
+                                                    onChange={(e) => setProfile({...profile, best10k: e.target.value})}
+                                                    placeholder="52.0"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">VMA (km/h) - optionnel</label>
+                                        <input
+                                            className="form-input"
+                                            type="number"
+                                            step="0.1"
+                                            value={profile.vma}
+                                            onChange={(e) => setProfile({...profile, vma: e.target.value})}
+                                            placeholder="Si vous connaissez votre VMA exacte"
+                                        />
+                                        <div style={{fontSize: '12px', color: 'var(--gray-600)', marginTop: '6px'}}>
+                                            Si renseigné, utilisé pour calibrer les entraînements
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                                            <input
+                                                type="checkbox"
+                                                checked={profile.challengeMode}
+                                                onChange={(e) => setProfile({...profile, challengeMode: e.target.checked})}
+                                                style={{width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--orange-primary)'}}
+                                            />
+                                            <div>
+                                                <div className="form-label" style={{marginBottom: '4px'}}>
+                                                    🔥 Mode Challenge
+                                                </div>
+                                                <div style={{fontSize: '13px', color: 'var(--gray-600)'}}>
+                                                    Entraînements plus intenses avec répétitions supplémentaires
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <button 
+                                        className="btn btn-primary btn-full"
+                                        onClick={() => {
+                                            if (goal) {
+                                                generateWeeklyPlan();
+                                            }
+                                            setShowMessage({
+                                                type: 'success',
+                                                text: '✅ Profil enregistré ! Les entraînements ont été mis à jour.'
+                                            });
+                                            setTimeout(() => setShowMessage(null), 4000);
+                                        }}
+                                    >
+                                        Enregistrer le profil
+                                    </button>
+
+                                    {(profile.best5k || profile.best10k || profile.vma) && (
+                                        <div className="alert alert-info" style={{marginTop: '16px'}}>
+                                            💡 Le programme utilise vos stats pour calculer votre VMA et adapter les séances
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="card">
+                                    <div className="card-title">VMA estimée</div>
+                                    <div style={{fontSize: '32px', fontWeight: '700', color: 'var(--orange-primary)', marginTop: '12px'}}>
+                                        {calculateCurrentLevel().vma.toFixed(1)} <span style={{fontSize: '18px', color: 'var(--gray-600)'}}>km/h</span>
+                                    </div>
+                                    <div style={{fontSize: '13px', color: 'var(--gray-600)', marginTop: '8px'}}>
+                                        Vitesse endurance: ~{(calculateCurrentLevel().vma * 0.75).toFixed(1)} km/h (75% VMA)
+                                    </div>
+                                    <div style={{fontSize: '13px', color: 'var(--gray-600)', marginTop: '4px'}}>
+                                        Allure 10K: ~{(calculateCurrentLevel().vma * 0.85).toFixed(1)} km/h (85% VMA)
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeView === 'settings' && (
+                            <div>
+                                <div className="card">
+                                    <div className="card-header">
+                                        <div className="card-title">
+                                            {goal ? 'Modifier l\'objectif' : 'Définir votre objectif'}
+                                        </div>
+                                    </div>
+                                    
+                                    <form onSubmit={handleGoalSubmit}>
+                                        <div className="form-group">
+                                            <label className="form-label">Nom de l'objectif</label>
+                                            <input
+                                                className="form-input"
+                                                type="text"
+                                                value={goalForm.name}
+                                                onChange={(e) => setGoalForm({...goalForm, name: e.target.value})}
+                                                placeholder="Trail des Monts, Semi-marathon..."
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Date de l'objectif</label>
+                                            <input
+                                                className="form-input"
+                                                type="date"
+                                                value={goalForm.date}
+                                                onChange={(e) => setGoalForm({...goalForm, date: e.target.value})}
+                                                min={new Date().toISOString().split('T')[0]}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label className="form-label">Distance (km)</label>
+                                                <input
+                                                    className="form-input"
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={goalForm.distance}
+                                                    onChange={(e) => setGoalForm({...goalForm, distance: e.target.value})}
+                                                    placeholder="15"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label className="form-label">Dénivelé (m)</label>
+                                                <input
+                                                    className="form-input"
+                                                    type="number"
+                                                    value={goalForm.elevation}
+                                                    onChange={(e) => setGoalForm({...goalForm, elevation: e.target.value})}
+                                                    placeholder="500"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Notes (optionnel)</label>
+                                            <textarea
+                                                className="form-textarea"
+                                                value={goalForm.notes}
+                                                onChange={(e) => setGoalForm({...goalForm, notes: e.target.value})}
+                                                placeholder="Infos, stratégie..."
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Type de préparation</label>
+                                            <div className="radio-group">
+                                                <label className={`radio-option ${goalForm.trainingType === 'route' ? 'selected' : ''}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="trainingType"
+                                                        value="route"
+                                                        checked={goalForm.trainingType === 'route'}
+                                                        onChange={(e) => setGoalForm({...goalForm, trainingType: e.target.value})}
+                                                    />
+                                                    <div className="radio-option-content">
+                                                        <div className="radio-option-title">🏃 Route / Piste</div>
+                                                        <div className="radio-option-desc">Focus VMA et fractionnés courts. Idéal pour 5K, 10K, semi</div>
+                                                    </div>
+                                                </label>
+
+                                                <label className={`radio-option ${goalForm.trainingType === 'mixed' ? 'selected' : ''}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="trainingType"
+                                                        value="mixed"
+                                                        checked={goalForm.trainingType === 'mixed'}
+                                                        onChange={(e) => setGoalForm({...goalForm, trainingType: e.target.value})}
+                                                    />
+                                                    <div className="radio-option-content">
+                                                        <div className="radio-option-title">🌲 Trail léger / Mixte</div>
+                                                        <div className="radio-option-desc">Équilibre fractionné et côtes. Pour trails modérés</div>
+                                                    </div>
+                                                </label>
+
+                                                <label className={`radio-option ${goalForm.trainingType === 'mountain' ? 'selected' : ''}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="trainingType"
+                                                        value="mountain"
+                                                        checked={goalForm.trainingType === 'mountain'}
+                                                        onChange={(e) => setGoalForm({...goalForm, trainingType: e.target.value})}
+                                                    />
+                                                    <div className="radio-option-content">
+                                                        <div className="radio-option-title">⛰️ Trail montagne</div>
+                                                        <div className="radio-option-desc">Focus dénivelé. Pour gros D+ et terrains techniques</div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label className="form-label">Séances / semaine</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={goalForm.sessionsPerWeek}
+                                                    onChange={(e) => setGoalForm({...goalForm, sessionsPerWeek: e.target.value})}
+                                                >
+                                                    <option value="2">2 séances</option>
+                                                    <option value="3">3 séances</option>
+                                                    <option value="4">4 séances</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label className="form-label">Durée max</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={goalForm.maxDuration}
+                                                    onChange={(e) => setGoalForm({...goalForm, maxDuration: e.target.value})}
+                                                >
+                                                    <option value="30">30 min</option>
+                                                    <option value="45">45 min</option>
+                                                    <option value="60">1h</option>
+                                                    <option value="90">1h30</option>
+                                                    <option value="120">2h</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" className="btn btn-primary btn-full">
+                                            {goal ? 'Mettre à jour' : 'Créer le programme'}
+                                        </button>
+
+                                        {goal && (
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-secondary btn-full"
+                                                onClick={() => {
+                                                    if (confirm('Supprimer cet objectif ?')) {
+                                                        setGoal(null);
+                                                        setWeeklyPlan([]);
+                                                        localStorage.removeItem('trainingGoal');
+                                                        localStorage.removeItem('weeklyPlan');
+                                                        setActiveView('home');
+                                                    }
+                                                }}
+                                                style={{marginTop: '12px'}}
+                                            >
+                                                Supprimer l'objectif
+                                            </button>
+                                        )}
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeView === 'planning' && (
+                            <div>
+                                {!goal ? (
+                                    <div className="empty-state">
+                                        <div className="empty-icon">🎯</div>
+                                        <div className="empty-title">Pas d'objectif</div>
+                                        <div className="empty-description">Définissez un objectif pour voir votre planning</div>
+                                        <button className="btn btn-primary" onClick={() => setActiveView('settings')}>
+                                            Créer un objectif
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="alert alert-info">
+                                            📅 Programme sur {weeklyPlan.length} semaines jusqu'au {new Date(goal.date).toLocaleDateString('fr-FR')}
+                                        </div>
+
+                                        {weeklyPlan.map(week => {
+                                            const completedCount = week.workouts.filter(w => getWorkoutStatus(w)).length;
+                                            return (
+                                                <div key={week.weekNumber} className="card">
+                                                    <div className="week-header">
+                                                        <div className="week-title">
+                                                            Semaine {week.weekNumber}
+                                                        </div>
+                                                        <span className={`week-badge ${week.isCurrent ? 'current' : 'future'}`}>
+                                                            {week.isCurrent ? 'En cours' : 'À venir'}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="week-summary">
+                                                        <span>📊 {week.totalDistance.toFixed(1)} km</span>
+                                                        <span>⛰️ {week.totalElevation} m D+</span>
+                                                        <span>✓ {completedCount}/{week.workouts.length} séances</span>
+                                                    </div>
+
+                                                    <div className="workout-grid">
+                                                        {week.workouts.map(workout => {
+                                                            const completed = getWorkoutStatus(workout);
+                                                            const isLocked = !week.isCurrent;
+                                                            return (
+                                                                <div 
+                                                                    key={workout.id} 
+                                                                    className={`workout-card ${completed ? 'completed' : ''} ${isLocked ? 'locked' : ''}`}
+                                                                    onClick={() => !completed && !isLocked && startWorkout(workout, isLocked)}
+                                                                    style={{cursor: completed || isLocked ? 'default' : 'pointer'}}
+                                                                >
+                                                                    <span className={`workout-badge ${workout.type}`}>
+                                                                        {workout.type === 'endurance' && '🏃 Endurance'}
+                                                                        {workout.type === 'interval-short' && '⚡ VMA'}
+                                                                        {workout.type === 'interval-medium' && '⚡ Tempo'}
+                                                                        {workout.type === 'tempo' && '🔥 Tempo'}
+                                                                        {workout.type === 'hills' && '⛰️ Côtes'}
+                                                                        {workout.type === 'long' && '🏃‍♂️ Longue'}
+                                                                        {workout.type === 'recovery' && '💆 Récup'}
+                                                                        {workout.type === 'goal' && '🎯 Objectif'}
+                                                                    </span>
+                                                                    
+                                                                    <div className={`completed-check ${completed ? 'done' : 'pending'}`}>
+                                                                        {completed ? '✓' : '○'}
+                                                                    </div>
+
+                                                                    <div className="workout-name">{workout.name}</div>
+                                                                    <div className="workout-desc">{workout.description}</div>
+
+                                                                    <div className="workout-stats">
+                                                                        <div className="workout-stat-item">
+                                                                            <div className="workout-stat-label">Dist.</div>
+                                                                            <div className="workout-stat-value">
+                                                                                {workout.distance}
+                                                                                <span className="workout-stat-unit">km</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="workout-stat-item">
+                                                                            <div className="workout-stat-label">D+</div>
+                                                                            <div className="workout-stat-value">
+                                                                                {workout.elevation}
+                                                                                <span className="workout-stat-unit">m</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="workout-stat-item">
+                                                                            <div className="workout-stat-label">Durée</div>
+                                                                            <div className="workout-stat-value">
+                                                                                {workout.estimatedTime}
+                                                                                <span className="workout-stat-unit">min</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {isLocked && (
+                                                                        <div className="locked-overlay">
+                                                                            🔒 Semaine {week.weekNumber}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {activeView === 'progression' && (
+                            <div>
+                                {!goal ? (
+                                    <div className="empty-state">
+                                        <div className="empty-icon">📊</div>
+                                        <div className="empty-title">Pas d'objectif</div>
+                                        <div className="empty-description">Définissez un objectif pour suivre votre progression</div>
+                                        <button className="btn btn-primary" onClick={() => setActiveView('settings')}>
+                                            Créer un objectif
+                                        </button>
+                                    </div>
+                                ) : !progress ? (
+                                    <div className="empty-state">
+                                        <div className="empty-icon">📊</div>
+                                        <div className="empty-title">Pas encore de données</div>
+                                        <div className="empty-description">Complétez des séances pour voir votre progression</div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="card">
+                                            <div className="progress-section">
+                                                <div className="progress-header">
+                                                    <span className="progress-label">Distance maximale</span>
+                                                    <span className="progress-value">
+                                                        {progress.distanceProgress.toFixed(0)}%
+                                                    </span>
+                                                </div>
+                                                <div style={{fontSize: '13px', color: 'var(--gray-600)', marginBottom: '8px'}}>
+                                                    {progress.bestDistance.toFixed(1)} km / {goal.distance} km
+                                                </div>
+                                                <div className="progress-bar">
+                                                    <div className="progress-fill" style={{width: `${progress.distanceProgress}%`}}></div>
+                                                </div>
+                                            </div>
+
+                                            <div className="progress-section">
+                                                <div className="progress-header">
+                                                    <span className="progress-label">Dénivelé maximal</span>
+                                                    <span className="progress-value">
+                                                        {progress.elevationProgress.toFixed(0)}%
+                                                    </span>
+                                                </div>
+                                                <div style={{fontSize: '13px', color: 'var(--gray-600)', marginBottom: '8px'}}>
+                                                    {progress.bestElevation} m / {goal.elevation} m
+                                                </div>
+                                                <div className="progress-bar">
+                                                    <div className="progress-fill" style={{width: `${progress.elevationProgress}%`}}></div>
+                                                </div>
+                                            </div>
+
+                                            <div className="progress-section" style={{marginBottom: 0}}>
+                                                <div className="progress-header">
+                                                    <span className="progress-label">Assiduité (4 semaines)</span>
+                                                    <span className="progress-value" style={{color: progress.consistency >= 75 ? '#10B981' : '#F59E0B'}}>
+                                                        {progress.consistency.toFixed(0)}%
+                                                    </span>
+                                                </div>
+                                                <div style={{fontSize: '13px', color: 'var(--gray-600)', marginBottom: '8px'}}>
+                                                    {progress.recentWorkouts} / {parseInt(goal.sessionsPerWeek) * 4} séances
+                                                </div>
+                                                <div className="progress-bar">
+                                                    <div 
+                                                        className="progress-fill" 
+                                                        style={{
+                                                            width: `${progress.consistency}%`,
+                                                            background: progress.consistency >= 75 ? '#10B981' : '#F59E0B'
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {progress.consistency < 50 && (
+                                            <div className="alert alert-warning">
+                                                ⚠️ Assiduité faible. Essayez de maintenir {goal.sessionsPerWeek} séances/semaine
+                                            </div>
+                                        )}
+
+                                        <div className="card">
+                                            <div className="card-title">Calendrier (28 derniers jours)</div>
+                                            <div className="calendar-grid">
+                                                {calendar.map(day => (
+                                                    <div 
+                                                        key={day.date} 
+                                                        className={`calendar-day ${day.hasWorkout ? 'has-workout' : ''} ${day.isToday ? 'today' : ''}`}
+                                                    >
+                                                        {day.day}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {activeView === 'historique' && (
+                            <div>
+                                {history.length === 0 ? (
+                                    <div className="empty-state">
+                                        <div className="empty-icon">📝</div>
+                                        <div className="empty-title">Aucune séance</div>
+                                        <div className="empty-description">Vos séances complétées apparaîtront ici</div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="stats-grid">
+                                            <div className="stat-card">
+                                                <div className="stat-title">Total séances</div>
+                                                <div className="stat-number">{history.length}</div>
+                                            </div>
+                                            <div className="stat-card">
+                                                <div className="stat-title">Cette semaine</div>
+                                                <div className="stat-number">
+                                                    {history.filter(w => {
+                                                        const weekAgo = new Date();
+                                                        weekAgo.setDate(weekAgo.getDate() - 7);
+                                                        return new Date(w.date) >= weekAgo;
+                                                    }).length}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {history.map(workout => (
+                                            <div key={workout.id} className="history-item">
+                                                <div className="history-date">
+                                                    {new Date(workout.date).toLocaleDateString('fr-FR', {
+                                                        weekday: 'long',
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    })}
+                                                </div>
+                                                <div className="history-name">{workout.name}</div>
+                                                {workout.notes && (
+                                                    <div className="history-note">"{workout.notes}"</div>
+                                                )}
+                                                <div className="history-stats">
+                                                    <div className="history-stat">
+                                                        <div className="history-stat-label">Distance</div>
+                                                        <div className="history-stat-value">{workout.distance} km</div>
+                                                    </div>
+                                                    <div className="history-stat">
+                                                        <div className="history-stat-label">Temps</div>
+                                                        <div className="history-stat-value">{workout.time} min</div>
+                                                    </div>
+                                                    <div className="history-stat">
+                                                        <div className="history-stat-label">D+</div>
+                                                        <div className="history-stat-value">{workout.elevation} m</div>
+                                                    </div>
+                                                    <div className="history-stat">
+                                                        <div className="history-stat-label">Allure</div>
+                                                        <div className="history-stat-value">{workout.pace} min/km</div>
+                                                    </div>
+                                                    <div className="history-stat">
+                                                        <div className="history-stat-label">Vitesse</div>
+                                                        <div className="history-stat-value">{workout.speed} km/h</div>
+                                                    </div>
+                                                    <div className="history-stat">
+                                                        <div className="history-stat-label">FC moy</div>
+                                                        <div className="history-stat-value">{workout.heartRate} bpm</div>
+                                                    </div>
+                                                </div>
+                                                {workout.difficulty && (
+                                                    <span className={`difficulty-badge difficulty-${workout.difficulty}`}>
+                                                        {workout.difficulty === 1 && '😫 Très difficile'}
+                                                        {workout.difficulty === 2 && '😓 Difficile'}
+                                                        {workout.difficulty === 3 && '😊 Juste bien'}
+                                                        {workout.difficulty === 4 && '🙂 Facile'}
+                                                        {workout.difficulty === 5 && '😎 Très facile'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {showModal && currentWorkout && (
+                        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <div className="modal-title">Valider la séance</div>
+                                    <div className="modal-subtitle">{currentWorkout.name}</div>
+                                </div>
+
+                                <form onSubmit={handleWorkoutSubmit}>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label className="form-label">Distance (km)</label>
+                                            <input
+                                                className="form-input"
+                                                type="number"
+                                                step="0.01"
+                                                value={workoutForm.distance}
+                                                onChange={(e) => setWorkoutForm({...workoutForm, distance: e.target.value})}
+                                                placeholder={currentWorkout.distance.toString()}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Temps (min)</label>
+                                            <input
+                                                className="form-input"
+                                                type="number"
+                                                value={workoutForm.time}
+                                                onChange={(e) => setWorkoutForm({...workoutForm, time: e.target.value})}
+                                                placeholder={currentWorkout.estimatedTime.toString()}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label className="form-label">Dénivelé (m)</label>
+                                            <input
+                                                className="form-input"
+                                                type="number"
+                                                value={workoutForm.elevation}
+                                                onChange={(e) => setWorkoutForm({...workoutForm, elevation: e.target.value})}
+                                                placeholder={currentWorkout.elevation.toString()}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">FC moy (bpm)</label>
+                                            <input
+                                                className="form-input"
+                                                type="number"
+                                                value={workoutForm.heartRate}
+                                                onChange={(e) => setWorkoutForm({...workoutForm, heartRate: e.target.value})}
+                                                placeholder="145"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Difficulté ressentie</label>
+                                        <div className="difficulty-selector">
+                                            {[
+                                                { value: 1, emoji: '😫', label: 'Très dur' },
+                                                { value: 2, emoji: '😓', label: 'Dur' },
+                                                { value: 3, emoji: '😊', label: 'Bien' },
+                                                { value: 4, emoji: '🙂', label: 'Facile' },
+                                                { value: 5, emoji: '😎', label: 'Très facile' }
+                                            ].map(diff => (
+                                                <button
+                                                    key={diff.value}
+                                                    type="button"
+                                                    className={`difficulty-btn ${workoutForm.difficulty === diff.value ? 'selected' : ''}`}
+                                                    onClick={() => setWorkoutForm({...workoutForm, difficulty: diff.value})}
+                                                >
+                                                    <span className="difficulty-emoji">{diff.emoji}</span>
+                                                    <span className="difficulty-label">{diff.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Notes (optionnel)</label>
+                                        <textarea
+                                            className="form-textarea"
+                                            value={workoutForm.notes}
+                                            onChange={(e) => setWorkoutForm({...workoutForm, notes: e.target.value})}
+                                            placeholder="Ressenti, météo, parcours..."
+                                        />
+                                    </div>
+
+                                    <div className="btn-group">
+                                        <button 
+                                            type="button" 
+                                            className="btn btn-secondary"
+                                            style={{flex: 1}}
+                                            onClick={() => {
+                                                setShowModal(false);
+                                                setWorkoutForm({
+                                                    distance: '',
+                                                    time: '',
+                                                    elevation: '',
+                                                    heartRate: '',
+                                                    difficulty: 3,
+                                                    notes: ''
+                                                });
+                                            }}
+                                        >
+                                            Annuler
+                                        </button>
+                                        <button type="submit" className="btn btn-success" style={{flex: 1}}>
+                                            ✓ Valider
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TrailTrainingApp />);
+    </script>
+</body>
+</html>
