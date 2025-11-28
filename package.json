@@ -1,0 +1,13 @@
+{
+  "name": "trailpro-app",
+  "version": "1.0.0",
+  "description": "Application TrailPro - Entraînement Running avec Firebase",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["running", "trail", "training", "firebase"],
+  "author": "",
+  "license": "MIT"
+}
+
