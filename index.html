@@ -207,6 +207,9 @@
             padding: 20px;
             position: relative;
             transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
         
         .workout-card:hover:not(.completed):not(.locked) {
@@ -226,6 +229,7 @@
         
         .workout-badge {
             display: inline-block;
+            width: fit-content;
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 11px;
@@ -921,29 +925,127 @@
             color: var(--gray-600);
         }
         
-        .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--orange-primary);
+        .mobile-menu {
+            position: relative;
+            display: none;
+        }
+        
+        .burger-btn {
+            background: transparent;
+            border: none;
+            color: var(--gray-700);
+            cursor: pointer;
+            padding: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .burger-btn:hover {
+            background: var(--gray-100);
+        }
+        
+        .mobile-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            min-width: 200px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        .mobile-dropdown button {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            text-align: left;
+            border: none;
+            background: transparent;
+            color: var(--gray-700);
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
-            border: 2px solid transparent;
+            font-family: inherit;
         }
         
-        .avatar:hover {
-            border-color: var(--orange-hover);
-            transform: scale(1.05);
+        .mobile-dropdown button:hover {
+            background: var(--gray-50);
         }
         
-        .avatar svg {
-            width: 20px;
-            height: 20px;
+        .mobile-dropdown button.active {
+            background: var(--orange-light);
+            color: var(--orange-primary);
+        }
+        
+        .welcome-message {
+            background: transparent;
+            color: var(--gray-900);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 16px;
+            font-weight: 400;
+        }
+        
+        .welcome-message strong {
+            font-weight: 700;
+        }
+        
+        .workout-details-btn {
+            margin-top: 12px;
+        }
+        
+        .workout-buttons-group {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+            padding-top: 12px;
+        }
+        
+        .workout-buttons-group .btn {
+            flex: 1;
+        }
+        
+        .workout-details-modal {
+            max-width: 600px;
+        }
+        
+        .workout-details-section {
+            margin-bottom: 20px;
+        }
+        
+        .workout-details-section h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+        
+        .workout-details-section p {
+            font-size: 14px;
+            color: var(--gray-600);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        .treadmill-info {
+            background: var(--orange-light);
+            border: 1px solid var(--orange-primary);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        
+        .treadmill-info strong {
+            color: var(--orange-primary);
         }
         
         .tabs {
@@ -1097,8 +1199,25 @@
                 padding: 6px 12px;
             }
             
+            /* Cacher la navigation desktop sur mobile */
+            .header-nav .nav-btn:not(.burger-btn) {
+                display: none;
+            }
+            
+            /* Afficher le menu burger sur mobile */
+            .mobile-menu {
+                display: block;
+            }
+            
             .auth-card {
                 padding: 24px;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            /* Cacher le menu burger sur desktop */
+            .mobile-menu {
+                display: none;
             }
         }
     </style>
@@ -1318,6 +1437,8 @@
             const [history, setHistory] = useState([]);
             const [showModal, setShowModal] = useState(false);
             const [currentWorkout, setCurrentWorkout] = useState(null);
+            const [showMobileMenu, setShowMobileMenu] = useState(false);
+            const [showWorkoutDetails, setShowWorkoutDetails] = useState(null);
             
             const [profile, setProfile] = useState({
                 level: 'intermediate', // beginner, intermediate, advanced, expert
@@ -1660,10 +1781,11 @@
                 const minIncline = Math.max(0, avgGrade * 0.8);
                 const maxIncline = avgGrade * 1.2;
                 
+                // Arrondir à l'entier le plus proche (1.3 -> 1, 1.6 -> 2)
                 return {
-                    min: minIncline.toFixed(1),
-                    max: maxIncline.toFixed(1),
-                    avg: avgGrade.toFixed(1)
+                    min: Math.round(minIncline),
+                    max: Math.round(maxIncline),
+                    avg: Math.round(avgGrade)
                 };
             };
 
@@ -1908,6 +2030,54 @@
             const getWorkoutStatus = (workout) => {
                 return history.find(h => h.plannedWorkoutId === workout.id);
             };
+            
+            const getWorkoutDetails = (workout) => {
+                const details = {
+                    title: workout.name,
+                    type: workout.type,
+                    description: workout.description,
+                    explanation: '',
+                    treadmillIncline: null
+                };
+                
+                // Calculer l'inclinaison tapis si nécessaire
+                if (profile.indoorTraining && workout.elevation > 0 && workout.distance > 0) {
+                    const incline = calculateTreadmillIncline(workout.elevation, workout.distance);
+                    details.treadmillIncline = incline;
+                }
+                
+                // Explications selon le type
+                switch(workout.type) {
+                    case 'endurance':
+                        details.explanation = `L'endurance fondamentale est la base de l'entraînement. C'est une allure confortable où vous pouvez tenir une conversation. Vous devez courir à ${workout.fcPercent || 72}% de votre fréquence cardiaque maximale. Cette séance améliore votre capacité aérobie et votre économie de course.`;
+                        break;
+                    case 'interval-short':
+                        details.explanation = `Le fractionné court (VMA) consiste en des répétitions courtes et intenses suivies de récupérations. Exemple : 30 secondes rapides à ${calculateCurrentLevel().vma.toFixed(1)} km/h, puis 30 secondes de récupération active. Répétez 8-12 fois. Cette séance améliore votre vitesse maximale aérobie.`;
+                        break;
+                    case 'interval-medium':
+                        details.explanation = `Le fractionné moyen (Tempo) combine vitesse et endurance. Exemple : 3 minutes à allure soutenue (85-90% FC max), puis 2 minutes de récupération. Répétez 4-6 fois. Cette séance améliore votre capacité à maintenir une vitesse élevée.`;
+                        break;
+                    case 'tempo':
+                        details.explanation = `Le tempo run est une course continue à allure soutenue (82-87% FC max). C'est une allure "confortablement difficile" - vous pouvez la tenir 20-40 minutes. Cette séance améliore votre seuil anaérobie.`;
+                        break;
+                    case 'hills':
+                        details.explanation = `L'entraînement en côtes renforce les muscles des jambes et améliore la puissance. Montez la côte à allure soutenue (80-88% FC max), puis redescendez en récupération active. Répétez 6-10 fois selon votre niveau.`;
+                        break;
+                    case 'long':
+                        details.explanation = `La sortie longue développe votre endurance. C'est une course à allure confortable (65-72% FC max) sur une durée plus longue. Cette séance améliore votre capacité à utiliser les graisses comme carburant.`;
+                        break;
+                    case 'recovery':
+                        details.explanation = `La récupération active est une course très lente (65-70% FC max) qui favorise la récupération après un effort intense. C'est essentiel pour progresser sans se blesser.`;
+                        break;
+                    case 'goal':
+                        details.explanation = `C'est le jour J ! Votre objectif de ${goal?.distance} km avec ${goal?.elevation} m de dénivelé. Restez calme, respectez votre rythme et profitez de l'expérience !`;
+                        break;
+                    default:
+                        details.explanation = workout.description;
+                }
+                
+                return details;
+            };
 
             const handleGoalSubmit = async (e) => {
                 e.preventDefault();
@@ -2071,16 +2241,26 @@
                             >
                                 Profil
                             </button>
-                            <div className="user-menu">
-                                <div 
-                                    className="avatar"
-                                    onClick={() => setActiveView('profile')}
-                                    title={user?.email}
+                            {/* Menu burger pour mobile */}
+                            <div className="mobile-menu">
+                                <button 
+                                    className="burger-btn"
+                                    onClick={() => setShowMobileMenu(!showMobileMenu)}
+                                    aria-label="Menu"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{width: '24px', height: '24px'}}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                                     </svg>
-                                </div>
+                                </button>
+                                {showMobileMenu && (
+                                    <div className="mobile-dropdown">
+                                        <button onClick={() => {setActiveView('home'); setShowMobileMenu(false);}} className={activeView === 'home' ? 'active' : ''}>Accueil</button>
+                                        <button onClick={() => {setActiveView('planning'); setShowMobileMenu(false);}} className={activeView === 'planning' ? 'active' : ''}>Planning</button>
+                                        <button onClick={() => {setActiveView('progression'); setShowMobileMenu(false);}} className={activeView === 'progression' ? 'active' : ''}>Progression</button>
+                                        <button onClick={() => {setActiveView('historique'); setShowMobileMenu(false);}} className={activeView === 'historique' ? 'active' : ''}>Historique</button>
+                                        <button onClick={() => {setActiveView('profile'); setShowMobileMenu(false);}} className={activeView === 'profile' ? 'active' : ''}>Profil</button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -2122,12 +2302,24 @@
                                             </div>
                                         </div>
 
+                                        {/* Message de bienvenue */}
+                                        {user && (
+                                            <div className="welcome-message">
+                                                Salut <strong>{user.email?.split('@')[0] || 'Coureur'}</strong>, on court aujourd'hui ? 🏃‍♂️
+                                            </div>
+                                        )}
+
                                         {currentWeek && (
                                             <div className="card">
                                                 <div className="card-header">
                                                     <div className="card-title">Semaine en cours</div>
                                                     <div className="card-description">
-                                                        Complétez vos séances quand vous le souhaitez
+                                                        {(() => {
+                                                            const weekStart = new Date(currentWeek.startDate);
+                                                            const weekEnd = new Date(weekStart);
+                                                            weekEnd.setDate(weekStart.getDate() + 6);
+                                                            return `${weekStart.toLocaleDateString('fr-FR', {day: 'numeric', month: 'short'})} - ${weekEnd.toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'})}`;
+                                                        })()}
                                                     </div>
                                                 </div>
 
@@ -2161,33 +2353,43 @@
 
                                                                 <div className="workout-stats">
                                                                     <div className="workout-stat-item">
-                                                                        <div className="workout-stat-label">Distance</div>
-                                                                        <div className="workout-stat-value">
-                                                                            {workout.distance}
-                                                                            <span className="workout-stat-unit">km</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="workout-stat-item">
-                                                                        <div className="workout-stat-label">D+</div>
-                                                                        <div className="workout-stat-value">
-                                                                            {workout.elevation}
-                                                                            <span className="workout-stat-unit">m</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="workout-stat-item">
-                                                                        <div className="workout-stat-label">Durée</div>
+                                                                        <div className="workout-stat-label">Temps</div>
                                                                         <div className="workout-stat-value">
                                                                             {workout.estimatedTime}
                                                                             <span className="workout-stat-unit">min</span>
                                                                         </div>
                                                                     </div>
+                                                                    <div className="workout-stat-item">
+                                                                        <div className="workout-stat-label">Dénivelé</div>
+                                                                        <div className="workout-stat-value">
+                                                                            {workout.elevation}
+                                                                            <span className="workout-stat-unit">m</span>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
 
-                                                                {!completed && (
-                                                                    <button className="btn btn-primary btn-full">
-                                                                        Valider cette séance
+                                                                <div className="workout-buttons-group">
+                                                                    <button 
+                                                                        className="btn btn-secondary"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setShowWorkoutDetails(workout);
+                                                                        }}
+                                                                    >
+                                                                        ℹ️ Détails
                                                                     </button>
-                                                                )}
+                                                                    {!completed && (
+                                                                        <button 
+                                                                            className="btn btn-primary"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                startWorkout(workout, false);
+                                                                            }}
+                                                                        >
+                                                                            Valider
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}
@@ -2865,26 +3067,42 @@
 
                                                                     <div className="workout-stats">
                                                                         <div className="workout-stat-item">
-                                                                            <div className="workout-stat-label">Dist.</div>
-                                                                            <div className="workout-stat-value">
-                                                                                {workout.distance}
-                                                                                <span className="workout-stat-unit">km</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="workout-stat-item">
-                                                                            <div className="workout-stat-label">D+</div>
-                                                                            <div className="workout-stat-value">
-                                                                                {workout.elevation}
-                                                                                <span className="workout-stat-unit">m</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="workout-stat-item">
-                                                                            <div className="workout-stat-label">Durée</div>
+                                                                            <div className="workout-stat-label">Temps</div>
                                                                             <div className="workout-stat-value">
                                                                                 {workout.estimatedTime}
                                                                                 <span className="workout-stat-unit">min</span>
                                                                             </div>
                                                                         </div>
+                                                                        <div className="workout-stat-item">
+                                                                            <div className="workout-stat-label">Dénivelé</div>
+                                                                            <div className="workout-stat-value">
+                                                                                {workout.elevation}
+                                                                                <span className="workout-stat-unit">m</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="workout-buttons-group">
+                                                                        <button 
+                                                                            className="btn btn-secondary"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setShowWorkoutDetails(workout);
+                                                                            }}
+                                                                        >
+                                                                            ℹ️ Détails
+                                                                        </button>
+                                                                        {!completed && !isLocked && (
+                                                                            <button 
+                                                                                className="btn btn-primary"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    startWorkout(workout, isLocked);
+                                                                                }}
+                                                                            >
+                                                                                Valider
+                                                                            </button>
+                                                                        )}
                                                                     </div>
 
                                                                     {isLocked && (
@@ -3206,6 +3424,78 @@
                                         </button>
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Détails de l'entraînement */}
+                    {showWorkoutDetails && (
+                        <div className="modal-overlay" onClick={() => setShowWorkoutDetails(null)}>
+                            <div className="modal workout-details-modal" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <div className="modal-title">{showWorkoutDetails.name}</div>
+                                    <div className="modal-subtitle">{getWorkoutDetails(showWorkoutDetails).description}</div>
+                                </div>
+
+                                <div className="workout-details-section">
+                                    <h4>📖 Qu'est-ce que c'est ?</h4>
+                                    <p>{getWorkoutDetails(showWorkoutDetails).explanation}</p>
+                                </div>
+
+                                <div className="workout-details-section">
+                                    <h4>📊 Paramètres de la séance</h4>
+                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                                        <div>
+                                            <div style={{fontSize: '12px', color: 'var(--gray-600)', marginBottom: '4px'}}>Temps estimé</div>
+                                            <div style={{fontSize: '18px', fontWeight: '600', color: 'var(--gray-900)'}}>
+                                                {showWorkoutDetails.estimatedTime} min
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style={{fontSize: '12px', color: 'var(--gray-600)', marginBottom: '4px'}}>Dénivelé</div>
+                                            <div style={{fontSize: '18px', fontWeight: '600', color: 'var(--gray-900)'}}>
+                                                {showWorkoutDetails.elevation} m
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style={{fontSize: '12px', color: 'var(--gray-600)', marginBottom: '4px'}}>Fréquence cardiaque</div>
+                                            <div style={{fontSize: '18px', fontWeight: '600', color: 'var(--gray-900)'}}>
+                                                {showWorkoutDetails.fcPercent || 75}% FC max
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style={{fontSize: '12px', color: 'var(--gray-600)', marginBottom: '4px'}}>Distance</div>
+                                            <div style={{fontSize: '18px', fontWeight: '600', color: 'var(--gray-900)'}}>
+                                                {showWorkoutDetails.distance} km
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {profile.indoorTraining && getWorkoutDetails(showWorkoutDetails).treadmillIncline && (
+                                    <div className="workout-details-section">
+                                        <h4>🏃‍♀️ Paramètres tapis de course</h4>
+                                        <div className="treadmill-info">
+                                            <p>
+                                                <strong>Inclinaison recommandée :</strong> {getWorkoutDetails(showWorkoutDetails).treadmillIncline.avg}%<br/>
+                                                <span style={{fontSize: '12px', color: 'var(--gray-600)'}}>
+                                                    (Plage : {getWorkoutDetails(showWorkoutDetails).treadmillIncline.min}% - {getWorkoutDetails(showWorkoutDetails).treadmillIncline.max}%)
+                                                </span>
+                                            </p>
+                                            <p style={{fontSize: '13px', marginTop: '8px', color: 'var(--gray-600)'}}>
+                                                Variez l'inclinaison pendant votre séance pour simuler le dénivelé naturel du trail.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button 
+                                    className="btn btn-secondary btn-full"
+                                    style={{marginTop: '24px'}}
+                                    onClick={() => setShowWorkoutDetails(null)}
+                                >
+                                    Fermer
+                                </button>
                             </div>
                         </div>
                     )}
