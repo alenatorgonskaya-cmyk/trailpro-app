@@ -1497,7 +1497,23 @@
                             getWorkouts(user.uid)
                         ]);
                         
-                        if (savedProfile) setProfile(savedProfile);
+                        if (savedProfile) {
+                            // Migration : si l'ancien profil utilise 'volume', convertir en 'weeklyVolume'
+                            if (savedProfile.volume && !savedProfile.weeklyVolume) {
+                                const volumeMapping = {
+                                    'light': '15-35',
+                                    'medium': '30-50',
+                                    'high': '40-60'
+                                };
+                                savedProfile.weeklyVolume = volumeMapping[savedProfile.volume] || '30-50';
+                                delete savedProfile.volume;
+                            }
+                            // Valeur par défaut si aucun volume n'est défini
+                            if (!savedProfile.weeklyVolume) {
+                                savedProfile.weeklyVolume = '30-50';
+                            }
+                            setProfile(savedProfile);
+                        }
                         if (savedGoal) {
                             setGoal(savedGoal);
                             setGoalForm(savedGoal);
@@ -1804,13 +1820,19 @@
                 const maxDuration = parseInt(goal.maxDuration) || 60;
                 const trainingType = goal.trainingType || 'mixed';
 
-                // Facteur de volume d'entraînement
-                const volumeFactors = {
-                    light: 0.85,
-                    medium: 1.0,
-                    high: 1.15
+                // Volume hebdomadaire cible en km
+                const getWeeklyVolumeTarget = (volumeRange) => {
+                    const ranges = {
+                        '0-20': { min: 10, max: 20, target: 15 },
+                        '15-35': { min: 15, max: 35, target: 25 },
+                        '30-50': { min: 30, max: 50, target: 40 },
+                        '40-60': { min: 40, max: 60, target: 50 },
+                        '60+': { min: 60, max: 80, target: 70 }
+                    };
+                    return ranges[volumeRange] || ranges['30-50'];
                 };
-                const volumeFactor = volumeFactors[profile.volume] || 1.0;
+                
+                const weeklyVolumeTarget = getWeeklyVolumeTarget(profile.weeklyVolume || '30-50');
 
                 // TRIMP cible par semaine (basé sur niveau et volume)
                 const baseWeeklyTRIMP = {
@@ -1819,7 +1841,9 @@
                     advanced: 400,
                     expert: 500
                 };
-                const targetWeeklyTRIMP = baseWeeklyTRIMP[profile.level] * volumeFactor;
+                // Ajuster le TRIMP en fonction du volume choisi
+                const volumeTRIMPFactor = weeklyVolumeTarget.target / 40; // 40km = référence
+                const targetWeeklyTRIMP = baseWeeklyTRIMP[profile.level] * volumeTRIMPFactor;
 
                 const weeks = [];
 
@@ -1827,7 +1851,13 @@
                     const weekProgress = weekNum / weeksUntilGoal;
                     const isLastWeek = weekNum === weeksUntilGoal;
 
-                    const weekDistanceTarget = targetDistance * (0.4 + 0.6 * weekProgress) * volumeFactor;
+                    // Volume hebdomadaire avec progression (augmente progressivement)
+                    const baseVolume = weeklyVolumeTarget.target;
+                    const progressFactor = 0.7 + (0.3 * weekProgress); // De 70% à 100% du volume cible
+                    const weekVolumeTarget = baseVolume * progressFactor;
+                    
+                    // Distance cible pour l'objectif (utilisée pour la dernière semaine)
+                    const weekDistanceTarget = targetDistance * (0.4 + 0.6 * weekProgress);
                     const weekElevationTarget = targetElevation * (0.3 + 0.7 * weekProgress);
 
                     const workouts = [];
@@ -1884,16 +1914,33 @@
                                 : [useInterval ? 'interval-medium' : 'hills', 'long'];
                         }
 
+                        // Distribution du volume hebdomadaire entre les séances
+                        const volumeDistribution = {
+                            'endurance': 0.28,
+                            'interval-short': 0.18,
+                            'interval-medium': 0.22,
+                            'tempo': 0.28,
+                            'hills': 0.22,
+                            'long': 0.38
+                        };
+                        
+                        // Calculer le volume total distribué pour ajuster
+                        const totalDistribution = sessionTypes.reduce((sum, type) => sum + (volumeDistribution[type] || 0.25), 0);
+                        
                         sessionTypes.forEach((type, index) => {
                             let workout = null;
                             
                             // Ajout de séances sur plat (1 séance sur 3 sans dénivelé)
                             const includeFlat = (index === 0 && weekNum % 3 === 0) || type === 'interval-short';
                             
+                            // Distance basée sur le volume hebdomadaire cible
+                            const typeVolumeRatio = (volumeDistribution[type] || 0.25) / totalDistribution;
+                            const targetDistanceForType = weekVolumeTarget * typeVolumeRatio;
+                            
                             switch(type) {
                                 case 'endurance':
                                     const enduranceDist = Math.max(
-                                        Math.min(weekDistanceTarget * 0.25, maxDuration / 60 * currentLevel.avgSpeed),
+                                        Math.min(targetDistanceForType, maxDuration / 60 * currentLevel.avgSpeed),
                                         (20 / 60) * currentLevel.avgSpeed
                                     );
                                     workout = {
@@ -1910,7 +1957,7 @@
                                 
                                 case 'interval-short':
                                     const intervalShortDist = Math.max(
-                                        Math.min(weekDistanceTarget * 0.2, maxDuration / 60 * currentLevel.avgSpeed * 0.9),
+                                        Math.min(targetDistanceForType, maxDuration / 60 * currentLevel.avgSpeed * 0.9),
                                         (20 / 60) * currentLevel.avgSpeed * 0.9
                                     );
                                     const vmaSpeed = currentLevel.vma || 12;
@@ -1929,7 +1976,7 @@
                                 
                                 case 'interval-medium':
                                     const intervalMedDist = Math.max(
-                                        Math.min(weekDistanceTarget * 0.25, maxDuration / 60 * currentLevel.avgSpeed * 0.95),
+                                        Math.min(targetDistanceForType, maxDuration / 60 * currentLevel.avgSpeed * 0.95),
                                         (20 / 60) * currentLevel.avgSpeed * 0.95
                                     );
                                     const reps = profile.challengeMode ? '5-7 x 3min/2min' : '4-6 x 3min/2min';
@@ -1947,7 +1994,7 @@
                                 
                                 case 'tempo':
                                     const tempoDist = Math.max(
-                                        Math.min(weekDistanceTarget * 0.3, maxDuration / 60 * currentLevel.avgSpeed * 1.05),
+                                        Math.min(targetDistanceForType, maxDuration / 60 * currentLevel.avgSpeed * 1.05),
                                         (20 / 60) * currentLevel.avgSpeed * 1.05
                                     );
                                     workout = {
@@ -1963,7 +2010,7 @@
                                 
                                 case 'hills':
                                     const hillsDist = Math.max(
-                                        Math.min(weekDistanceTarget * 0.22, maxDuration / 60 * currentLevel.avgSpeed * 0.85),
+                                        Math.min(targetDistanceForType, maxDuration / 60 * currentLevel.avgSpeed * 0.85),
                                         (20 / 60) * currentLevel.avgSpeed * 0.85
                                     );
                                     const hillReps = profile.challengeMode ? '8-12 x côtes' : '6-10 x côtes';
@@ -1981,7 +2028,7 @@
                                 case 'long':
                                     const longDist = Math.max(
                                         Math.min(
-                                            Math.min(weekDistanceTarget * 0.5, targetDistance * 0.8),
+                                            Math.min(targetDistanceForType, targetDistance * 0.8),
                                             maxDuration / 60 * currentLevel.avgSpeed * 1.1
                                         ),
                                         (25 / 60) * currentLevel.avgSpeed * 1.1 // min 25 min pour sortie longue
@@ -2437,47 +2484,75 @@
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="form-label">Volume d'entraînement</label>
+                                        <label className="form-label">Volume d'entraînement hebdomadaire</label>
                                         <div className="radio-group">
-                                            <label className={`radio-option ${profile.volume === 'light' ? 'selected' : ''}`}>
+                                            <label className={`radio-option ${profile.weeklyVolume === '0-20' ? 'selected' : ''}`}>
                                                 <input
                                                     type="radio"
-                                                    name="volume"
-                                                    value="light"
-                                                    checked={profile.volume === 'light'}
-                                                    onChange={(e) => setProfile({...profile, volume: e.target.value})}
+                                                    name="weeklyVolume"
+                                                    value="0-20"
+                                                    checked={profile.weeklyVolume === '0-20'}
+                                                    onChange={(e) => setProfile({...profile, weeklyVolume: e.target.value})}
                                                 />
                                                 <div className="radio-option-content">
-                                                    <div className="radio-option-title">🌙 Léger</div>
-                                                    <div className="radio-option-desc">Volume réduit de 15% - Idéal si vous débutez ou pratiquez d'autres sports</div>
+                                                    <div className="radio-option-title">🌱 0-20 km/semaine</div>
+                                                    <div className="radio-option-desc">Débutant ou reprise après pause</div>
                                                 </div>
                                             </label>
 
-                                            <label className={`radio-option ${profile.volume === 'medium' ? 'selected' : ''}`}>
+                                            <label className={`radio-option ${profile.weeklyVolume === '15-35' ? 'selected' : ''}`}>
                                                 <input
                                                     type="radio"
-                                                    name="volume"
-                                                    value="medium"
-                                                    checked={profile.volume === 'medium'}
-                                                    onChange={(e) => setProfile({...profile, volume: e.target.value})}
+                                                    name="weeklyVolume"
+                                                    value="15-35"
+                                                    checked={profile.weeklyVolume === '15-35'}
+                                                    onChange={(e) => setProfile({...profile, weeklyVolume: e.target.value})}
                                                 />
                                                 <div className="radio-option-content">
-                                                    <div className="radio-option-title">⚖️ Moyen</div>
-                                                    <div className="radio-option-desc">Volume standard - Équilibre optimal</div>
+                                                    <div className="radio-option-title">🏃 15-35 km/semaine</div>
+                                                    <div className="radio-option-desc">Coureur régulier - 2-3 séances/semaine</div>
                                                 </div>
                                             </label>
 
-                                            <label className={`radio-option ${profile.volume === 'high' ? 'selected' : ''}`}>
+                                            <label className={`radio-option ${profile.weeklyVolume === '30-50' ? 'selected' : ''}`}>
                                                 <input
                                                     type="radio"
-                                                    name="volume"
-                                                    value="high"
-                                                    checked={profile.volume === 'high'}
-                                                    onChange={(e) => setProfile({...profile, volume: e.target.value})}
+                                                    name="weeklyVolume"
+                                                    value="30-50"
+                                                    checked={profile.weeklyVolume === '30-50'}
+                                                    onChange={(e) => setProfile({...profile, weeklyVolume: e.target.value})}
                                                 />
                                                 <div className="radio-option-content">
-                                                    <div className="radio-option-title">💪 Élevé</div>
-                                                    <div className="radio-option-desc">Volume augmenté de 15% - Pour coureurs expérimentés</div>
+                                                    <div className="radio-option-title">💪 30-50 km/semaine</div>
+                                                    <div className="radio-option-desc">Coureur assidu - 3-4 séances/semaine</div>
+                                                </div>
+                                            </label>
+
+                                            <label className={`radio-option ${profile.weeklyVolume === '40-60' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="weeklyVolume"
+                                                    value="40-60"
+                                                    checked={profile.weeklyVolume === '40-60'}
+                                                    onChange={(e) => setProfile({...profile, weeklyVolume: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">🔥 40-60 km/semaine</div>
+                                                    <div className="radio-option-desc">Coureur expérimenté - 4-5 séances/semaine</div>
+                                                </div>
+                                            </label>
+
+                                            <label className={`radio-option ${profile.weeklyVolume === '60+' ? 'selected' : ''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="weeklyVolume"
+                                                    value="60+"
+                                                    checked={profile.weeklyVolume === '60+'}
+                                                    onChange={(e) => setProfile({...profile, weeklyVolume: e.target.value})}
+                                                />
+                                                <div className="radio-option-content">
+                                                    <div className="radio-option-title">⚡ 60+ km/semaine</div>
+                                                    <div className="radio-option-desc">Coureur très expérimenté - 5+ séances/semaine</div>
                                                 </div>
                                             </label>
                                         </div>
