@@ -5,10 +5,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "firebase:login": "npx firebase login",
-    "firebase:init": "npx firebase init hosting",
-    "firebase:deploy": "npx firebase deploy --only hosting",
-    "deploy": "npx firebase deploy --only hosting"
+    "firebase": "node node_modules/firebase-tools/lib/bin/firebase.js",
+    "firebase:login": "node node_modules/firebase-tools/lib/bin/firebase.js login",
+    "firebase:init": "node node_modules/firebase-tools/lib/bin/firebase.js init hosting",
+    "firebase:deploy": "node node_modules/firebase-tools/lib/bin/firebase.js deploy --only hosting",
+    "deploy": "node node_modules/firebase-tools/lib/bin/firebase.js deploy --only hosting"
   },
   "keywords": [
     "running",
